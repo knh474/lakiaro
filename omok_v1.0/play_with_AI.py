@@ -5,8 +5,8 @@ from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtCore import Qt
 import cv2
 import time
-import tensorflow as tf
-
+import tensorflow.compat.v1 as tf
+#tf.disable_v2_behavior()
 
 class MyApp(QWidget):
 
