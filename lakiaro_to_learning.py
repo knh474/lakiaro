@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[39]:
+# In[1]:
 
 
 import pandas as pd
@@ -17,6 +17,7 @@ class lakiaro:
     # 95 = mist
     # 99 = flower
     # THick 9,1 /Prior 0~9,0~3(m,l,r)/ Next 0~9,0~3(m,l,r) / nor,fifth,last 0,1,2/ broken 0,1 eg:9 40 60 0 0
+    #           ㅡ0010/ㅣ0030/ㄱ1010/1030/1050/1070
     ####################
     
     #create frame
@@ -174,7 +175,7 @@ class lakiaro:
         for i in range(11):
             for j in range(11):
                 
-                #뿌리를 GUI_INFO있는 정보로 변환
+                #뿌리를 GUI_INFO있는 정보로 변환 @@@아직안씀!
                 
                 val = a.iloc[(i,j)]
                 if val >10 and val<90: #뿌리이면
@@ -202,9 +203,11 @@ class lakiaro:
                             first =1
                         elif temp2[0] == 2:
                             last =1
+     # THick 9,1 /Prior 0~9,0~3(m,l,r)/ Next 0~9,0~3(m,l,r) / nor,fifth,last 0,1,2/ broken 0,1 eg:9 40 60 0 0
+    #           ㅡ0010/ㅣ0030/ㄱ1010/1030/1050/1070                   
+                    gui_root_num_info = 1000000
+                    if val % 10 == 5: #fifth, 정확히
 
-                    gui_root_num_info = 1000000            
-                    try:
                         if i < next_loc[0] and j == next_loc[1]:
                             gui_root_num_info += 2000
                         elif i == next_loc[0] and j < next_loc[1]:
@@ -213,9 +216,7 @@ class lakiaro:
                             gui_root_num_info += 8000
                         elif i == next_loc[0] and j > next_loc[1]:
                             gui_root_num_info += 4000
-                    except:
-                        pass
-                    try:
+
                         if i < prio_loc[0] and j == prio_loc[1]:
                             gui_root_num_info += 200000
                         elif i == prio_loc[0] and j < prio_loc[1]:
@@ -224,8 +225,30 @@ class lakiaro:
                             gui_root_num_info += 600000
                         elif i == prio_loc[0] and j > prio_loc[1]:
                             gui_root_num_info += 800000
-                    except:
-                        pass
+
+                    elif first ==1:
+                        if j == next_loc[1]: #ㅣ
+                            gui_root_num_info += 3000
+                        elif i == next_loc[0]: #ㅡ
+                            gui_root_num_info += 1000   
+                    elif last ==1:
+                        if j == prio_loc[1]:
+                            gui_root_num_info += 3000
+                        elif i == prio_loc[0]:
+                            gui_root_num_info += 1000                           
+                    else:
+                        if ((i < next_loc[0] and j == next_loc[1]) and (i == prio_loc[0] and j > prio_loc[1])) or                        ((i == next_loc[0] and j > next_loc[1]) and (i <prio_loc[0] and j == prio_loc[1])):
+                            gui_root_num_info += 101000 #ㄱ 시계방향회전
+                        elif ((i == next_loc[0] and j > next_loc[1]) and (i > prio_loc[0] and j == prio_loc[1])) or                        ((i > next_loc[0] and j == next_loc[1]) and (i ==prio_loc[0] and j > prio_loc[1])):
+                            gui_root_num_info += 103000 
+                        elif ((i > next_loc[0] and j == next_loc[1]) and (i == prio_loc[0] and j < prio_loc[1])) or                        ((i == next_loc[0] and j < next_loc[1]) and (i >prio_loc[0] and j == prio_loc[1])):
+                            gui_root_num_info += 105000 
+                        elif ((i == next_loc[0] and j < next_loc[1]) and (i < prio_loc[0] and j == prio_loc[1])) or                        ((i <next_loc[0] and j ==next_loc[1]) and (i ==prio_loc[0] and j < prio_loc[1])):
+                            gui_root_num_info += 107000 
+                        elif i == next_loc[0] and i == prio_loc[0]:
+                            gui_root_num_info += 1000   #ㅡ
+                        elif j == next_loc[1] and j == prio_loc[1]:
+                            gui_root_num_info += 3000    #ㅣ
 
                     if val % 10 < 5: #Thick root
                         gui_root_num_info += 8000000
@@ -256,7 +279,7 @@ class lakiaro:
         
 
 
-# In[40]:
+# In[2]:
 
 
 class input_info():
@@ -379,99 +402,139 @@ class to_gui(): #df는 m_df
         return self.init_df,cnt_zero,cnt_broken,cnt_grav,cnt_root
 
 
-# In[42]:
+# In[38]:
 
 
 class run_game():
     
-    def __init__(self,total_level=0,hoe_level=8):
+    def __init__(self,total_level=0.1,hoe_level=8):
         self.total_level = total_level #자갈 난이도 (0~1)
         self.hoe_level = hoe_level #호미 난이도 
         light_dic = {5:18, 6:20, 7:22, 8:25, 9:28} #장광고유동
         self.light_dig = light_dic[self.hoe_level] #얕게파기 횟수제한
-        self.score = 0
-        self.input_xy_list=[]
-        self.history = []
-    
-    def create_answer(self):
-        ans = lakiaro(self.total_level)
-        a,b,c,d = ans.create_all()#a:df, d: 총 줄기, e:총 흙, f:총 자가ㅓㄹ
-        e = ans.create_frame(2)
-        return a,b,c,d,e
-    
-    def my_turn(self,x,y,ld,left_try_n,df,m_df):
-        ####about location
-        click_around = input_info().xy(x,y) #클릭좌표 주변 data [list]
-        ####click
-        click_info = click_event(df,click_around,self.hoe_level)
-        if ld == 0:
-            left_try_n -=1
-            rt_loc = click_info.right_click()
-        elif ld ==1:
-            rt_loc = click_info.left_click()
-        ####to gui
-        gui = to_gui(m_df,rt_loc)
-        m_df , found_dirt , cnt_broken,cnt_grav, cnt_root= gui.to_df()
-        left_root = self.total_cnt_root-cnt_root
-        status = round((self.total_cnt_root-cnt_broken)/self.total_cnt_root,2)
-        left_dirt= self.total_cnt_dirt - found_dirt
-        left_grav = self.total_cnt_gravel- cnt_grav
-        self.score = found_dirt * status - cnt_broken*5
-        print(m_df,"\n남은 얕게 파기 횟수: {left_light}\n남은 흙: {dirt} \n남은 자갈: {grav} \n뿌리 상태: {stat}% "               .format(left_light=left_try_n, dirt=left_dirt,grav=left_grav,stat =status*100))
-        print('남은뿌리: ',left_root)
-        print('점수: ',self.score)
         
-        return left_try_n, left_dirt, left_grav, status*100,left_root,self.score ,m_df
+        #histroy작업
+
+        
+    def reset(self):
+        #set game
+        self.Done = False
+        self.score = 0
+        self.left_light_n = self.light_dig 
+        self.click_num = 0
+        #save_history
+        self.history = []
+        
+        ans = lakiaro(self.total_level)
+        self.ans_df,self.total_cnt_root,self.total_cnt_dirt,self.total_cnt_gravel = ans.create_all()#a:df, d: 총 줄기, e:총 흙, f:총 자가ㅓㄹ
+        self.m_df = ans.create_frame(2) #initial state!
     
+    def input_xy_click(self,x,y,ld):
+        if self.Done == False:
+            if x>4 and x<9 and y>4 and y<9: #중앙 클릭시 패스
+                pass
+            else:
+                if ld == 0 and self.left_light_n == 0: #얕게파기 횟수가 남아있을때만 진행
+                    pass
+                else:
+
+                    
+                    ####about location
+                    click_around = input_info().xy(x,y) #클릭좌표 주변 data [list]        
+                    ####click
+                    click_info = click_event(self.ans_df,click_around,self.hoe_level)
+                    ####click event
+                    if ld == 0:
+                        self.left_light_n -= 1
+                        rt_loc = click_info.right_click()
+                    elif ld ==1:
+                        rt_loc = click_info.left_click()        
+                    ####to gui
+                    gui = to_gui(self.m_df,rt_loc)
+                    self.m_df, found_dirt , cnt_broken,cnt_grav, cnt_root= gui.to_df()
+                    self.left_root = self.total_cnt_root-cnt_root
+                    self.status = round((self.total_cnt_root-cnt_broken)/self.total_cnt_root,2)
+                    self.left_dirt= self.total_cnt_dirt - found_dirt
+                    self.left_grav = self.total_cnt_gravel- cnt_grav
+                    self.score = round(((found_dirt  - cnt_broken)*0.99),2)
+
+                    #print info
+                    print(self.m_df,"\n남은 얕게 파기 횟수: {left_light}\n남은 흙: {dirt} \n남은 자갈: {grav} \n뿌리 상태: {stat}% "                           .format(left_light=self.left_light_n, dirt=self.left_dirt,grav=self.left_grav,stat =self.status*100))
+                    print('남은뿌리: ',self.left_root)
+                    print('점수: ',self.score)
+
+                    
+                    #if done
+                    if self.left_dirt == 0:
+                        self.Done =True
+                        
+                    ####save history 
+                    #input: x,y,ld output: m_df, score, done
+                    #history[i][0]= index(click_num)
+                    #history[i][1][0]=x
+                    #history[i][1][1]=y
+                    #history[i][1][2]=ld
+                    #history[i][2][0]=df
+                    #history[i][2][1]=score
+                    #history[i][2][2]=done
+                    self.click_num += 1
+                    
+                    lst = self.m_df.values.tolist()
+                    v_lst =[]
+                    for i in range(len(lst)):
+                        v_lst.extend(lst[i])
+                        
+                    input_val = (x,y,ld)
+                    output_val = (v_lst, self.score, self.Done)
+                    history = (self.click_num, input_val, output_val)
+                    self.history.append(history)
+                    
+                    return self.m_df, self.score , self.Done
+
     
     #랜덤입력
     def random_loc(self,left_try_n):
+
+        xy_lst = []
         
-        while True:
-            x = rd.randint(1,12)
-            y = rd.randint(1,12)
-            if x > 4 and x <9 and y >4 and y<9:
-                pass
-            elif (x,y) not in self.input_xy_list:
-                self.input_xy_list.append((x,y))
-                break
+        lst = self.m_df.values.tolist()
+        v_lst =[]
+        for i in range(len(lst)):
+            v_lst.extend(lst[i])
+        for i in range(len(v_lst)):
+            if v_lst[i] == 95:
+                x = i // 12
+                y = i % 12
+                xy_lst.append((x,y))
+
+        rnd = rd.randint(0,len(xy_lst)-1)
+
+        x = xy_lst[rnd][0]
+        y = xy_lst[rnd][1]
 
         if left_try_n > 0:
             ld = rd.randint(0,1)
         else:
             ld = 1
-        
-        return x,y,ld
-        
-    def run(self):
-        df, self.total_cnt_root, self.total_cnt_dirt, self.total_cnt_gravel, m_df = self.create_answer()
-        print(df,"\n총 뿌리: {root}\n총 흙: {dirt}\n총 자갈: {grav}"                   .format(root=self.total_cnt_root, dirt=self.total_cnt_dirt,grav=self.total_cnt_gravel))
-        left_try_n = self.light_dig
-        left_dirt = self.total_cnt_dirt
-        print(m_df) #처음 실행시 봐야할 그림
-        
-        while left_dirt > 0: 
-            x,y,ld = self.random_loc(left_try_n)
-            left_try_n, left_dirt, left_grav, status ,left_root,self.score,m_df = self.my_turn(x,y,ld,left_try_n,df,m_df)
-                
-            if left_dirt == 0:
-                print('END\nScore: ',self.score)
-                break  
-        return self.score
+
+        return x+1,y+1,ld
         
 if __name__ == '__main__':
     a = run_game(0.1,8)
-    a.run()
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
+    a.reset()
+    while a.Done==False:
+        x,y,ld = a.random_loc(a.left_light_n)
+        a.input_xy_click(x,y,ld)
+    if a.Done ==True:
+        print(a.m_df)
+        print(a.history[0][0])
+        print(a.history[0][1][0])
+        print(a.history[0][1][1])
+        print(a.history[0][1][2])
+        print(a.history[0][2][0])
+        print(a.history[0][2][1])
+        print(a.history[0][2][2])
+        
+        
+        
 
