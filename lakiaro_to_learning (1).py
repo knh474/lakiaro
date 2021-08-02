@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[2]:
 
 
 import pandas as pd
@@ -279,7 +279,7 @@ class lakiaro:
         
 
 
-# In[30]:
+# In[3]:
 
 
 class input_info():
@@ -316,17 +316,11 @@ class input_info():
         
         
 class click_event(): #위치 dic으로 return, df는 answer df
-    def __init__(self,df,loc_info,m_df,hoe_level=8):  
+    def __init__(self,df,loc_info,hoe_level=8):  
         self.df = df
         self.level = hoe_level
         self.loc_lst = loc_info
         self.loc_click = self.loc_lst[0] # 클릭한 위치
-        
-        if m_df.iloc[self.loc_click] == 95:
-            self.doevent =1
-        else:
-            self.doevent = 0
-        
         #get prior, next roor info
         val = self.df.iloc[self.loc_click]
 #         if val > 0 and val <90: #if root
@@ -368,7 +362,6 @@ class click_event(): #위치 dic으로 return, df는 answer df
                     del rt_lst[temp1]
             return rt_lst
 
-
     def right_click(self): #얕게파기 (뿌리가 자갈이 있는지 확인)
         rt_lst = []
         val = self.df.iloc[self.loc_click]
@@ -409,7 +402,7 @@ class to_gui(): #df는 m_df
         return self.init_df,cnt_zero,cnt_broken,cnt_grav,cnt_root
 
 
-# In[31]:
+# In[14]:
 
 
 class run_game():
@@ -436,11 +429,6 @@ class run_game():
         self.ans_df,self.total_cnt_root,self.total_cnt_dirt,self.total_cnt_gravel = ans.create_all()#a:df, d: 총 줄기, e:총 흙, f:총 자가ㅓㄹ
         self.m_df = ans.create_frame(2) #initial state!
         init_state = self.df_to_list(self.m_df)
-        self.left_root = self.total_cnt_root
-        self.left_grav = self.total_cnt_gravel
-        self.left_dirt = self.total_cnt_dirt
-        self.n_score=0
-        self.p_score=0
         return init_state
         
     
@@ -454,69 +442,63 @@ class run_game():
         else:
             ld =0
 
-        x = (j-1) // 12 +1
-        y = j-12*(x-1)
-       #print(j,x,y,ld)
+        x = j//12 +1
+        y = j -(x-1)*12
+        print(x,y,ld)
         
         if self.Done == False:
-            self.reward = 0
-            
-            if x>4 and x<9 and y>4 and y<9:
+            if x>4 and x<9 and y>4 and y<9: #중앙 클릭시 패스
                 pass
-            elif ld== 1 or (ld == 0 and self.left_light_n > 0): #얕게파기 횟수가 남아있을때만 진행
+            else:
+                if ld == 0 and self.left_light_n == 0: #얕게파기 횟수가 남아있을때만 진행
+                    ld == 1 # 얕게파기 시도시 강제 깊게파기
+                
 
+                    
                 ####about location
                 click_around = input_info().xy(x,y) #클릭좌표 주변 data [list]        
                 ####click
-                click_info = click_event(self.ans_df,click_around,self.m_df,self.hoe_level)
+                click_info = click_event(self.ans_df,click_around,self.hoe_level)
                 ####click event
-                if click_info.doevent ==1: #이미 클릭한곳이 아닐때(95)
-                    if ld == 0:
-                        self.left_light_n -= 1
-                        rt_loc = click_info.right_click()
-                    elif ld ==1:
-                        rt_loc = click_info.left_click()        
-                    ####to gui
-                    gui = to_gui(self.m_df,rt_loc)
-                    self.m_df, found_dirt , cnt_broken,cnt_grav, cnt_root= gui.to_df()
-                    self.left_root = self.total_cnt_root-cnt_root
-                    self.status = round((self.total_cnt_root-cnt_broken)/self.total_cnt_root,2)
-                    self.left_dirt= self.total_cnt_dirt - found_dirt
-                    self.left_grav = self.total_cnt_gravel- cnt_grav
-                    self.p_score = round((found_dirt  - cnt_broken),2)
-                    self.reward = self.p_score -self.n_score
-                    self.n_score=self.p_score
-                    #print info
-                   # print(self.m_df,"\n남은 얕게 파기 횟수: {left_light}\n남은 흙: {dirt} \n남은 자갈: {grav} \n뿌리 상태: {stat}% "                         #  .format(left_light=self.left_light_n, dirt=self.left_dirt,grav=self.left_grav,stat =self.status*100))
-                   # print('남은뿌리: ',self.left_root)
-                    #print('점수: ',self.n_score)
-                    #print(self.reward)
-                else:
-                    pass
-            
-            else:
-                pass
+                if ld == 0:
+                    self.left_light_n -= 1
+                    rt_loc = click_info.right_click()
+                elif ld ==1:
+                    rt_loc = click_info.left_click()        
+                ####to gui
+                gui = to_gui(self.m_df,rt_loc)
+                self.m_df, found_dirt , cnt_broken,cnt_grav, cnt_root= gui.to_df()
+                self.left_root = self.total_cnt_root-cnt_root
+                self.status = round((self.total_cnt_root-cnt_broken)/self.total_cnt_root,2)
+                self.left_dirt= self.total_cnt_dirt - found_dirt
+                self.left_grav = self.total_cnt_gravel- cnt_grav
+                self.score = round((found_dirt  - cnt_broken),2)
+
+                #print info
+                print(self.m_df,"\n남은 얕게 파기 횟수: {left_light}\n남은 흙: {dirt} \n남은 자갈: {grav} \n뿌리 상태: {stat}% "                       .format(left_light=self.left_light_n, dirt=self.left_dirt,grav=self.left_grav,stat =self.status*100))
+                print('남은뿌리: ',self.left_root)
+                print('점수: ',self.score)
 
 
-            #if done
-            if self.left_dirt == 0:
-                self.Done =True
+                #if done
+                if self.left_dirt == 0:
+                    self.Done =True
 
-            ####save history 
+                ####save history 
 
-            self.click_num += 1
+                self.click_num += 1
 
-            lst = self.m_df.values.tolist()
-            v_lst =[]
-            for i in range(len(lst)):
-                v_lst.extend(lst[i])
+                lst = self.m_df.values.tolist()
+                v_lst =[]
+                for i in range(len(lst)):
+                    v_lst.extend(lst[i])
 
-            input_val = (x,y,ld)
-            output_val = (v_lst, self.n_score, self.Done)
-            history = (self.click_num, input_val, output_val)
-            self.history.append(history)
-            
-            return v_lst, self.reward , self.Done  #v_lst:state
+                input_val = (x,y,ld)
+                output_val = (v_lst, self.score, self.Done)
+                history = (self.click_num, input_val, output_val)
+                self.history.append(history)
+
+                return v_lst, self.score , self.Done  #v_lst:state
                 
     def df_to_list(self,df):
         lst = df.values.tolist()
@@ -580,16 +562,6 @@ if __name__ == '__main__':
         #history[i][2][1]=score
         #history[i][2][2]=done       
         
-
-
-# In[18]:
-
-
-if __name__ == '__main__':
-    a = run_game(0.1,8)
-    a.reset()
-    print(a.ans_df)
-    a.input_xy_click(270)
 
 
 # In[ ]:
