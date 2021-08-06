@@ -1,10 +1,10 @@
 
-#encoding: utf-8
+# encoding: utf-8
 
-##
-## cartpole.py
-## Gaetan JUVIN 06/24/2017
-##
+# #
+# # cartpole.py
+# # Gaetan JUVIN 06/24/2017
+# #
 
 import gym
 import random
@@ -15,6 +15,7 @@ from keras.models     import Sequential
 from keras.layers     import Dense
 from keras.optimizers import Adam
 
+# +
 class Agent():
     def __init__(self, state_size, action_size):
         self.weight_backup      = "cartpole_weight.h5"
@@ -36,9 +37,9 @@ class Agent():
         model.add(Dense(self.action_size, activation='linear'))
         model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
 
-        if os.path.isfile(self.weight_backup):
-            model.load_weights(self.weight_backup)
-            self.exploration_rate = self.exploration_min
+#         if os.path.isfile(self.weight_backup):
+#             model.load_weights(self.weight_backup)
+#             self.exploration_rate = self.exploration_min
         return model
 
     def save_model(self):
@@ -47,7 +48,9 @@ class Agent():
     def act(self, state):
         if np.random.rand() <= self.exploration_rate:
             return random.randrange(self.action_size)
+        
         act_values = self.brain.predict(state)
+        print(act_values)
         return np.argmax(act_values[0])
 
     def remember(self, state, action, reward, next_state, done):
@@ -60,12 +63,15 @@ class Agent():
         for state, action, reward, next_state, done in sample_batch:
             target = reward
             if not done:
-              target = reward + self.gamma * np.amax(self.brain.predict(next_state)[0])
+                target = reward + self.gamma * np.amax(self.brain.predict(next_state)[0])
             target_f = self.brain.predict(state)
             target_f[0][action] = target
             self.brain.fit(state, target_f, epochs=1, verbose=0)
         if self.exploration_rate > self.exploration_min:
             self.exploration_rate *= self.exploration_decay
+
+
+# -
 
 class CartPole:
     def __init__(self):
@@ -76,6 +82,7 @@ class CartPole:
         self.state_size        = self.env.observation_space.shape[0]
         self.action_size       = self.env.action_space.n
         self.agent             = Agent(self.state_size, self.action_size)
+        print('action size ',self.action_size)
 
 
     def run(self):
@@ -90,7 +97,7 @@ class CartPole:
                     #self.env.render()
 
                     action = self.agent.act(state)
-
+                    print('aciont:  ',action)
                     next_state, reward, done, _ = self.env.step(action)
                     next_state = np.reshape(next_state, [1, self.state_size])
                     self.agent.remember(state, action, reward, next_state, done)
@@ -104,3 +111,5 @@ class CartPole:
 if __name__ == "__main__":
     cartpole = CartPole()
     cartpole.run()
+
+

@@ -1,9 +1,20 @@
-#!/usr/bin/env python
-# coding: utf-8
+# -*- coding: utf-8 -*-
+# ---
+# jupyter:
+#   jupytext:
+#     formats: ipynb,py:light
+#     text_representation:
+#       extension: .py
+#       format_name: light
+#       format_version: '1.5'
+#       jupytext_version: 1.11.4
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
 
-# In[1]:
-
-
+# +
 import pandas as pd
 import random as rd
 import numpy as np
@@ -237,13 +248,17 @@ class lakiaro:
                         elif i == prio_loc[0]:
                             gui_root_num_info += 1000                           
                     else:
-                        if ((i < next_loc[0] and j == next_loc[1]) and (i == prio_loc[0] and j > prio_loc[1])) or                        ((i == next_loc[0] and j > next_loc[1]) and (i <prio_loc[0] and j == prio_loc[1])):
+                        if ((i < next_loc[0] and j == next_loc[1]) and (i == prio_loc[0] and j > prio_loc[1])) or\
+                        ((i == next_loc[0] and j > next_loc[1]) and (i <prio_loc[0] and j == prio_loc[1])):
                             gui_root_num_info += 101000 #ㄱ 시계방향회전
-                        elif ((i == next_loc[0] and j > next_loc[1]) and (i > prio_loc[0] and j == prio_loc[1])) or                        ((i > next_loc[0] and j == next_loc[1]) and (i ==prio_loc[0] and j > prio_loc[1])):
+                        elif ((i == next_loc[0] and j > next_loc[1]) and (i > prio_loc[0] and j == prio_loc[1])) or\
+                        ((i > next_loc[0] and j == next_loc[1]) and (i ==prio_loc[0] and j > prio_loc[1])):
                             gui_root_num_info += 103000 
-                        elif ((i > next_loc[0] and j == next_loc[1]) and (i == prio_loc[0] and j < prio_loc[1])) or                        ((i == next_loc[0] and j < next_loc[1]) and (i >prio_loc[0] and j == prio_loc[1])):
+                        elif ((i > next_loc[0] and j == next_loc[1]) and (i == prio_loc[0] and j < prio_loc[1])) or\
+                        ((i == next_loc[0] and j < next_loc[1]) and (i >prio_loc[0] and j == prio_loc[1])):
                             gui_root_num_info += 105000 
-                        elif ((i == next_loc[0] and j < next_loc[1]) and (i < prio_loc[0] and j == prio_loc[1])) or                        ((i <next_loc[0] and j ==next_loc[1]) and (i ==prio_loc[0] and j < prio_loc[1])):
+                        elif ((i == next_loc[0] and j < next_loc[1]) and (i < prio_loc[0] and j == prio_loc[1])) or\
+                        ((i <next_loc[0] and j ==next_loc[1]) and (i ==prio_loc[0] and j < prio_loc[1])):
                             gui_root_num_info += 107000 
                         elif i == next_loc[0] and i == prio_loc[0]:
                             gui_root_num_info += 1000   #ㅡ
@@ -279,9 +294,8 @@ class lakiaro:
         
 
 
-# In[30]:
 
-
+# +
 class input_info():
     def __init__(self):
         pass
@@ -394,6 +408,10 @@ class to_gui(): #df는 m_df
         x =[]
         for i in range(12):
             x.extend(lst[i])
+#         x = np.array(lst)
+#         x = x.reshape(144)
+#         k = np.count_nonzero(x > 100)
+#         j = np.count_nonzero(x > 10 and x < 90)
         k=0 #손상뿌리
         j=0 #정상뿌리
         for i in range(len(x)):
@@ -409,9 +427,7 @@ class to_gui(): #df는 m_df
         return self.init_df,cnt_zero,cnt_broken,cnt_grav,cnt_root
 
 
-# In[31]:
-
-
+# +
 class run_game():
     
     def __init__(self,total_level=0.1,hoe_level=8):
@@ -441,10 +457,15 @@ class run_game():
         self.left_dirt = self.total_cnt_dirt
         self.n_score=0
         self.p_score=0
+        self.p_cnt_broken = 0
+        
+        #print(self.ans_df)
+        
         return init_state
         
     
     def input_xy_click(self,j):
+        #k= np.argmax(j) #catagoricial
         #x,y, ld
         # 1~288
         #j = 72, ld = 1 => 144+72   x = 6 , y = 12
@@ -456,10 +477,11 @@ class run_game():
 
         x = (j-1) // 12 +1
         y = j-12*(x-1)
-       #print(j,x,y,ld)
+        #print(j,x,y,ld)
         
         if self.Done == False:
             self.reward = 0
+            self.n_reward = 0
             
             if x>4 and x<9 and y>4 and y<9:
                 pass
@@ -486,11 +508,24 @@ class run_game():
                     self.p_score = round((found_dirt  - cnt_broken),2)
                     self.reward = self.p_score -self.n_score
                     self.n_score=self.p_score
+                    
+                    
+                    if found_dirt > 0:
+                        self.n_reward = 1
+                    self.n_cnt_broken = cnt_broken
+                    #print('next',self.n_cnt_broken)
+                    #print('prio',self.p_cnt_broken)
+                    now_cnt_broken = self.n_cnt_broken-self.p_cnt_broken 
+                    self.p_cnt_broken=self.n_cnt_broken
+                    #print(now_cnt_broken)
+                    if now_cnt_broken >0:
+                        self.n_reward = -1
                     #print info
-                   # print(self.m_df,"\n남은 얕게 파기 횟수: {left_light}\n남은 흙: {dirt} \n남은 자갈: {grav} \n뿌리 상태: {stat}% "                         #  .format(left_light=self.left_light_n, dirt=self.left_dirt,grav=self.left_grav,stat =self.status*100))
-                   # print('남은뿌리: ',self.left_root)
-                    #print('점수: ',self.n_score)
-                    #print(self.reward)
+#                     print(self.m_df,"\n남은 얕게 파기 횟수: {left_light}\n남은 흙: {dirt} \n남은 자갈: {grav} \n뿌리 상태: {stat}% " \
+#                           .format(left_light=self.left_light_n, dirt=self.left_dirt,grav=self.left_grav,stat =self.status*100))
+#                     print('남은뿌리: ',self.left_root)
+#                     print('점수: ',self.n_score)
+#                     print(self.reward)
                 else:
                     pass
             
@@ -516,7 +551,7 @@ class run_game():
             history = (self.click_num, input_val, output_val)
             self.history.append(history)
             
-            return v_lst, self.reward , self.Done  #v_lst:state
+            return v_lst, self.n_reward , self.Done  #v_lst:state
                 
     def df_to_list(self,df):
         lst = df.values.tolist()
@@ -561,6 +596,7 @@ if __name__ == '__main__':
     while a.Done==False:
         a.input_xy_click(rd.randint(1,288))
     if a.Done ==True:
+        print(a.status)
         pass
 #         print(a.m_df)
 #         print(a.history[0][0])
@@ -579,21 +615,14 @@ if __name__ == '__main__':
         #history[i][2][0]=df
         #history[i][2][1]=score
         #history[i][2][2]=done       
-        
 
 
-# In[18]:
-
+# -
 
 if __name__ == '__main__':
     a = run_game(0.1,8)
     a.reset()
     print(a.ans_df)
     a.input_xy_click(270)
-
-
-# In[ ]:
-
-
 
 
